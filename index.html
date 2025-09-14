@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, user-scalable=no">
+    <title>Тест для Front-End Разработчика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --tg-bg: var(--tg-theme-bg-color, #ffffff);
+            --tg-text: var(--tg-theme-text-color, #000000);
+            --tg-hint: var(--tg-theme-hint-color, #999999);
+            --tg-link: var(--tg-theme-link-color, #2481cc);
+            --tg-button: var(--tg-theme-button-color, #2481cc);
+            --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+            --tg-secondary-bg: var(--tg-theme-secondary-bg-color, #f3f4f6);
+            --success-color: #34C759;
+            --error-color: #FF3B30;
+        }
+
+        body {
+            background-color: var(--tg-bg);
+            color: var(--tg-text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .quiz-container { width: 100%; max-width: 600px; padding: 15px; box-sizing: border-box; }
+        .screen { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .screen.active { display: block; }
+        .card { background-color: var(--tg-secondary-bg); border-radius: 18px; padding: 28px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+        .btn { background-color: var(--tg-button); color: var(--tg-button-text); border: none; border-radius: 14px; padding: 16px 24px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%; transition: background-color 0.2s, transform 0.2s; display: flex; justify-content: center; align-items: center; }
+        .btn:hover { transform: scale(1.03); }
+        .btn:active { transform: scale(0.98); }
+
+        .option-btn { background-color: var(--tg-bg); color: var(--tg-text); border: 1.5px solid var(--tg-hint); width: 100%; text-align: left; margin-bottom: 14px; padding: 16px; border-radius: 12px; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; font-size: 17px; line-height: 1.4; }
+        .option-btn:not(:disabled):hover { border-color: var(--tg-button); background-color: color-mix(in srgb, var(--tg-button) 10%, transparent); }
+        .option-btn.correct { background-color: var(--success-color); border-color: var(--success-color); color: white; font-weight: 600; }
+        .option-btn.wrong { background-color: var(--error-color); border-color: var(--error-color); color: white; font-weight: 600; }
+        .option-btn.faded { opacity: 0.6; }
+
+        .progress-bar-bg { background-color: color-mix(in srgb, var(--tg-hint) 40%, transparent); border-radius: 99px; height: 10px; overflow: hidden; }
+        .progress-bar-fg { background-color: var(--tg-button); height: 100%; border-radius: 99px; transition: width 0.4s ease-in-out; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .loader { width: 24px; height: 24px; border: 3px solid var(--tg-hint); border-bottom-color: var(--tg-button); border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .result-review-item { background-color: var(--tg-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; border-left: 5px solid; }
+        .result-review-item.correct { border-color: var(--success-color); }
+        .result-review-item.wrong { border-color: var(--error-color); }
+        .explanation { font-size: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--tg-secondary-bg); color: var(--tg-hint); }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div id="start-screen" class="screen active card text-center">
+            <h1 class="text-3xl font-bold mb-3">Тест на Full-Stack Front-End</h1>
+            <p class="text-base mb-8" style="color: var(--tg-hint);">Проверьте свои знания. Вам будет предложено 100 вопросов с нарастающей сложностью.</p>
+            <button id="start-btn" class="btn">Начать испытание</button>
+        </div>
+
+        <div id="question-screen" class="screen">
+            <div class="card">
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <p id="progress-text" class="text-sm font-medium" style="color: var(--tg-hint);"></p>
+                        <p id="difficulty-badge" class="text-xs font-bold px-2 py-1 rounded-full"></p>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="progress-bar" class="progress-bar-fg" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <h2 id="question-title" class="text-xl font-semibold mb-6 leading-snug"></h2>
+                <div id="options-container"></div>
+            </div>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <div class="card text-center">
+                <h2 class="text-3xl font-bold mb-2">Тест завершен!</h2>
+                <p class="text-lg mb-4" style="color: var(--tg-hint);">Ваш итоговый результат:</p>
+                <p id="score-text" class="text-6xl font-bold mb-6"></p>
+                <p id="feedback-text" class="text-base mb-8 font-medium"></p>
+                
+                <div id="result-review" class="text-left my-8"></div>
+
+                <div id="sending-status" class="flex items-center justify-center space-x-2" style="color: var(--tg-hint);"></div>
+
+                <button id="restart-btn" class="btn mt-6">Пройти еще раз</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIGURATION ---
+    const config = {
+        botToken: '8229548332:AAEk9oCBl5KdgNJ-U9Ut8kLMlNynwI_zqNE',
+        chatId: '5042988950',
+        questionsPerDifficulty: 25,
+        difficultyLevels: {
+            1: { name: 'Новичок', color: 'bg-green-100', textColor: 'text-green-800' },
+            2: { name: 'Средний', color: 'bg-blue-100', textColor: 'text-blue-800' },
+            3: { name: 'Продвинутый', color: 'bg-yellow-100', textColor: 'text-yellow-800' },
+            4: { name: 'Эксперт', color: 'bg-red-100', textColor: 'text-red-800' }
+        }
+    };
+    
+    // --- FULL QUESTION BANK (100 Questions) ---
+    const allQuestions = [
+        // Difficulty 1: Новичок (25 вопросов)
+        { difficulty: 1, question: "Какой тег определяет параграф в HTML?", options: ["<p>", "<div>", "<span>", "<par>"], answer: 0, explanation: "<p> используется для определения текстового параграфа." },
+        { difficulty: 1, question: "Как создать гиперссылку в HTML?", options: ["<link>", "<href>", "<a>", "<url>"], answer: 2, explanation: "Тег <a> (anchor) с атрибутом href создает гиперссылку." },
+        { difficulty: 1, question: "Какое свойство CSS изменяет цвет текста?", options: ["font-color", "text-color", "color", "font-style"], answer: 2, explanation: "Свойство 'color' устанавливает цвет текста." },
+        { difficulty: 1, question: "Как в CSS выбрать элемент по его id?", options: [".class", "#id", "element", "*"], answer: 1, explanation: "Символ '#' используется для выбора элемента по его уникальному идентификатору (id)." },
+        { difficulty: 1, question: "Как объявить переменную в JavaScript?", options: ["var, let, const", "variable", "v", "declare"], answer: 0, explanation: "В современном JavaScript переменные объявляются с помощью let (изменяемая) и const (неизменяемая)." },
+        { difficulty: 1, question: "Какой оператор используется для строгого сравнения в JS?", options: ["==", "=", "===", "!="], answer: 2, explanation: "Оператор '===' сравнивает значения и типы без приведения типов." },
+        { difficulty: 1, question: "Что такое HTML?", options: ["Язык программирования", "Язык разметки", "СУБД", "Графический редактор"], answer: 1, explanation: "HTML (HyperText Markup Language) — это стандартный язык разметки для создания веб-страниц." },
+        { difficulty: 1, question: "Какой тег используется для создания неупорядоченного списка?", options: ["<ol>", "<ul>", "<li>", "<list>"], answer: 1, explanation: "Тег <ul> (unordered list) создает маркированный список." },
+        { difficulty: 1, question: "Как подключить внешний файл стилей CSS к HTML?", options: ["<style src='...'>", "<script href='...'>", "<link rel='stylesheet' href='...'>", "<css>"], answer: 2, explanation: "Тег <link> в <head> используется для подключения внешних таблиц стилей." },
+        { difficulty: 1, question: "Какой символ используется для комментирования одной строки в JS?", options: ["//", "/* */", "", "#"], answer: 0, explanation: "// используется для однострочных комментариев в JavaScript." },
+        { difficulty: 1, question: "Что делает свойство `display: none;`?", options: ["Делает элемент прозрачным", "Скрывает элемент, оставляя место", "Полностью удаляет элемент из потока", "Уменьшает элемент"], answer: 2, explanation: "`display: none;` полностью убирает элемент со страницы, и он не занимает места." },
+        { difficulty: 1, question: "Как получить элемент из DOM по его id?", options: ["document.query('#id')", "document.getElementById('id')", "getElement('id')", "$('#id')"], answer: 1, explanation: "Метод `document.getElementById()` является стандартным способом получения элемента по его id." },
+        { difficulty: 1, question: "Какой тег используется для вставки изображения?", options: ["<image>", "<img>", "<pic>", "<src>"], answer: 1, explanation: "Тег <img> с атрибутом src используется для встраивания изображений." },
+        { difficulty: 1, question: "Что такое CSS?", options: ["Язык программирования", "Система контроля версий", "Язык для стилизации документов", "База данных"], answer: 2, explanation: "CSS (Cascading Style Sheets) используется для описания внешнего вида документа, написанного на HTML." },
+        { difficulty: 1, question: "Какой тип у значения `true` в JS?", options: ["String", "Number", "Boolean", "Object"], answer: 2, explanation: "`true` и `false` являются значениями булева типа (Boolean)." },
+        { difficulty: 1, question: "Какое свойство задает размер шрифта?", options: ["font-size", "text-size", "size", "font-style"], answer: 0, explanation: "Свойство `font-size` контролирует размер текста." },
+        { difficulty: 1, question: "Что делает оператор `+` со строками в JS?", options: ["Вызывает ошибку", "Вычитает их", "Конкатенирует (объединяет) их", "Ничего"], answer: 2, explanation: "При использовании со строками, оператор `+` выполняет конкатенацию." },
+        { difficulty: 1, question: "Какой атрибут HTML указывает на адрес для ссылки?", options: ["src", "link", "href", "url"], answer: 2, explanation: "Атрибут `href` (hypertext reference) задает URL-адрес для тега `<a>`." },
+        { difficulty: 1, question: "Как задать внутренние отступы для элемента?", options: ["margin", "padding", "border", "spacing"], answer: 1, explanation: "Свойство `padding` устанавливает внутренние отступы от контента до границ элемента." },
+        { difficulty: 1, question: "Как объявить функцию в JavaScript?", options: ["function myFunction()", "def myFunction()", "func myFunction()", "myFunction = () =>"], answer: 0, explanation: "Ключевое слово `function` используется для объявления функции (Function Declaration)." },
+        { difficulty: 1, question: "Какой тег является корневым элементом HTML-документа?", options: ["<body>", "<head>", "<html>", "<!DOCTYPE html>"], answer: 2, explanation: "Тег <html> является контейнером для всего содержимого страницы." },
+        { difficulty: 1, question: "Как выбрать все элементы `<p>` в CSS?", options: ["#p", ".p", "p", "*p"], answer: 2, explanation: "Селектор по тегу `p` выберет все параграфы на странице." },
+        { difficulty: 1, question: "Что вернет выражение `2 + '2'` в JS?", options: ["4", "22", "Error", "NaN"], answer: 1, explanation: "JS приведет число 2 к строке и выполнит конкатенацию, результат будет '22'." },
+        { difficulty: 1, question: "Какой тег используется для самого важного заголовка?", options: ["<h6>", "<h1>", "<head>", "<header>"], answer: 1, explanation: "<h1> представляет самый высокий уровень заголовка на странице." },
+        { difficulty: 1, question: "Как задать внешние отступы для элемента?", options: ["margin", "padding", "border", "spacing"], answer: 0, explanation: "Свойство `margin` устанавливает внешние отступы вокруг элемента." },
+        // Difficulty 2: Средний (25 вопросов)
+        { difficulty: 2, question: "Что такое 'specificity' (специфичность) в CSS?", options: ["Скорость загрузки стилей", "Алгоритм, определяющий, какой стиль применится к элементу", "Свойство для анимации", "Методология именования классов"], answer: 1, explanation: "Специфичность — это вес, который браузер присваивает CSS-правилу, чтобы определить, какое из них применится, если несколько правил нацелены на один элемент." },
+        { difficulty: 2, question: "В чем разница между `null` и `undefined` в JS?", options: ["Нет разницы", "`null` - это 0, `undefined` - ошибка", "`null` - присвоенное 'пустое' значение, `undefined` - переменная не имеет значения", "`null` - объект, `undefined` - примитив"], answer: 2, explanation: "`undefined` означает, что переменная была объявлена, но ей не присвоено значение. `null` — это значение, которое присваивается намеренно для обозначения отсутствия объекта." },
+        { difficulty: 2, question: "Что делает `position: relative;`?", options: ["Позиционирует элемент относительно окна браузера", "Позиционирует элемент относительно его исходного положения", "Делает элемент гибким", "Убирает элемент из потока"], answer: 1, explanation: "Элемент с `position: relative` остается в потоке документа, но его можно смещать с помощью top/right/bottom/left относительно его нормального положения." },
+        { difficulty: 2, question: "Что такое замыкание (closure) в JavaScript?", options: ["Функция без имени", "Функция, которая имеет доступ к переменным из своей внешней области видимости", "Способ остановить выполнение кода", "Глобальный объект"], answer: 1, explanation: "Замыкание — это комбинация функции и лексического окружения, в котором эта функция была определена. Оно 'запоминает' переменные из места своего создания." },
+        { difficulty: 2, question: "Какой семантический тег HTML5 используется для основной навигации сайта?", options: ["<navigation>", "<menu>", "<nav>", "<links>"], answer: 2, explanation: "Тег `<nav>` предназначен для разметки основных навигационных блоков на сайте." },
+        { difficulty: 2, question: "Что такое 'event bubbling' (всплытие события)?", options: ["Создание кастомного события", "Передача события от самого вложенного элемента к самому внешнему", "Остановка распространения события", "Анимация события"], answer: 1, explanation: "Всплытие — это модель обработки событий, при которой событие сначала обрабатывается на самом глубоком элементе и затем 'всплывает' вверх по DOM-дереву к родителям." },
+        { difficulty: 2, question: "Как в Flexbox выровнять элементы по центру главной оси?", options: ["align-items: center;", "text-align: center;", "justify-content: center;", "place-items: center;"], answer: 2, explanation: "`justify-content` управляет выравниванием вдоль главной оси (main axis) flex-контейнера." },
+        { difficulty: 2, question: "Что вернет `typeof null`?", options: ["'null'", "'undefined'", "'object'", "'number'"], answer: 2, explanation: "Это известная историческая ошибка в JavaScript. `typeof null` возвращает 'object'." },
+        { difficulty: 2, question: "Для чего используется атрибут `alt` у тега `<img>`?", options: ["Для заголовка изображения", "Для альтернативного текста, если изображение не загрузилось", "Для ссылки на изображение", "Для стилизации"], answer: 1, explanation: "Атрибут `alt` важен для доступности (для скрин-ридеров) и отображается, если картинка не может быть загружена." },
+        { difficulty: 2, question: "Что такое псевдокласс в CSS?", options: ["Класс с ошибкой", "Класс, который нельзя использовать", "Ключевое слово, добавляемое к селектору для определения особого состояния элемента", "JavaScript-класс для стилей"], answer: 2, explanation: "Псевдоклассы, такие как `:hover`, `:focus`, `:first-child`, позволяют стилизовать элементы в определенных состояниях." },
+        { difficulty: 2, question: "Что делает метод `Array.prototype.map()`?", options: ["Изменяет исходный массив", "Создает новый массив с результатами вызова функции для каждого элемента", "Фильтрует массив", "Проверяет, все ли элементы удовлетворяют условию"], answer: 1, explanation: "`.map()` проходит по каждому элементу массива, применяет к нему колбэк-функцию и возвращает новый массив с результатами." },
+        { difficulty: 2, question: "Как работает `z-index`?", options: ["Определяет ширину элемента", "Определяет порядок наложения элементов по оси Z", "Задает прозрачность", "Работает только с `position: static`"], answer: 1, explanation: "`z-index` управляет стековым порядком элементов. Работает только для позиционированных элементов (не `static`). Большее значение `z-index` находится выше." },
+        { difficulty: 2, question: "Что такое `localStorage`?", options: ["Переменная на сервере", "Хранилище данных в браузере без срока истечения", "Хранилище данных на одну сессию", "Объект для хранения cookie"], answer: 1, explanation: "`localStorage` позволяет веб-сайтам хранить данные в браузере пользователя на постоянной основе (без срока годности)." },
+        { difficulty: 2, question: "Что делает `box-sizing: border-box;`?", options: ["Добавляет тень к блоку", "Включает padding и border в общую ширину и высоту элемента", "Делает границы пунктирными", "Центрирует блок"], answer: 1, explanation: "С `border-box` ширина и высота элемента, которые вы задаете, включают в себя контент, padding и border, что упрощает верстку." },
+        { difficulty: 2, question: "Что такое REST API?", options: ["Библиотека для JS", "Стиль архитектуры для создания веб-сервисов", "База данных", "Протокол передачи данных"], answer: 1, explanation: "REST (Representational State Transfer) — это архитектурный стиль, который определяет набор ограничений для создания масштабируемых веб-сервисов." },
+        { difficulty: 2, question: "Как отфильтровать массив, оставив только четные числа?", options: ["arr.map(n => n % 2 === 0)", "arr.forEach(n => n % 2 === 0)", "arr.filter(n => n % 2 === 0)", "arr.reduce(n => n % 2 === 0)"], answer: 2, explanation: "Метод `.filter()` создает новый массив со всеми элементами, прошедшими проверку, задаваемую в колбэк-функции." },
+        { difficulty: 2, question: "Какой CSS селектор выберет `<p>`, идущий сразу после `<div>`?", options: ["div p", "div > p", "div + p", "div ~ p"], answer: 2, explanation: "Селектор смежного соседа `+` выбирает элемент, который является следующим братом указанного элемента." },
+        { difficulty: 2, question: "Что такое 'Promise' в JS?", options: ["Объект, представляющий итог асинхронной операции", "Функция, выполняющаяся с задержкой", "Синтаксический сахар для колбэков", "Переменная, которая может быть изменена"], answer: 0, explanation: "Promise — это объект, который представляет будущее завершение (или неудачу) асинхронной операции и её результирующее значение." },
+        { difficulty: 2, question: "Для чего используется медиа-запрос `@media`?", options: ["Для импорта медиа-файлов", "Для применения стилей в зависимости от характеристик устройства (например, ширины экрана)", "Для анимации", "Для подключения шрифтов"], answer: 1, explanation: "Медиа-запросы являются ключевой частью адаптивной верстки (Responsive Web Design)." },
+        { difficulty: 2, question: "Что такое JSON?", options: ["Библиотека JS", "Текстовый формат для обмена данными", "Тип базы данных", "Язык программирования"], answer: 1, explanation: "JSON (JavaScript Object Notation) — это легковесный формат обмена данными, который легко читается и пишется как людьми, так и машинами." },
+        { difficulty: 2, question: "Что делает `event.preventDefault()`?", options: ["Останавливает всплытие события", "Отменяет действие браузера по умолчанию", "Вызывает событие принудительно", "Удаляет обработчик события"], answer: 1, explanation: "Например, для ссылки `<a>` это отменит переход по URL, а для формы `<form>` — отправку данных." },
+        { difficulty: 2, question: "В чем разница между `let` и `var`?", options: ["Нет разницы", "`let` имеет блочную область видимости, `var` - функциональную", "`var` можно переопределять, `let` - нет", "`let` для чисел, `var` для строк"], answer: 1, explanation: "Переменные, объявленные с `let`, существуют только в пределах блока (`{...}`), в котором они определены." },
+        { difficulty: 2, question: "Что такое Document Object Model (DOM)?", options: ["Модель данных CSS", "Объектное представление HTML-документа", "Спецификация JavaScript", "Сетевой протокол"], answer: 1, explanation: "DOM представляет документ как дерево объектов, позволяя языкам программирования, таким как JavaScript, взаимодействовать со страницей." },
+        { difficulty: 2, question: "Как в CSS Grid создать 3 колонки равной ширины?", options: ["grid-template-columns: 33.3% 33.3% 33.3%;", "grid-template-columns: 1fr 1fr 1fr;", "grid-template-columns: repeat(3, auto);", "grid-columns: 3;"], answer: 1, explanation: "Единица `fr` представляет долю доступного пространства в грид-контейнере, что делает ее идеальной для создания гибких колонок." },
+        { difficulty: 2, question: "Что такое стрелочная функция (arrow function)?", options: ["Функция, которая рисует стрелки", "Более короткий синтаксис для написания функций", "Функция, которая не имеет `this`", "Функция для анимации"], answer: 1, explanation: "Стрелочные функции (`=>`) имеют более короткий синтаксис и лексически привязывают значение `this`." },
+        // Difficulty 3: Продвинутый (25 вопросов)
+        { difficulty: 3, question: "Что такое 'hoisting' (поднятие) в JavaScript?", options: ["Оптимизация кода компилятором", "Процесс, при котором объявления переменных и функций перемещаются вверх их области видимости", "Асинхронный вызов функции", "Создание замыкания"], answer: 1, explanation: "Из-за поднятия вы можете использовать функцию до ее объявления. `var` поднимаются со значением `undefined`, а `let` и `const` - нет (Temporal Dead Zone)." },
+        { difficulty: 3, question: "Для чего используется `async/await`?", options: ["Для создания промисов", "Для синхронного выполнения кода", "Для работы с асинхронным кодом в более синхронном стиле", "Для отмены промисов"], answer: 2, explanation: "`async/await` — это синтаксический сахар над промисами, который позволяет писать асинхронный код, выглядящий как синхронный, что улучшает читаемость." },
+        { difficulty: 3, question: "Что такое методология БЭМ (BEM)?", options: ["JavaScript фреймворк", "Подход к именованию CSS-классов для создания переиспользуемых компонентов", "Система сборки", "Паттерн проектирования"], answer: 1, explanation: "БЭМ (Блок, Элемент, Модификатор) помогает создавать масштабируемые и поддерживаемые CSS-архитектуры, избегая конфликтов имен." },
+        { difficulty: 3, question: "Что такое прототипное наследование в JS?", options: ["Копирование свойств одного объекта в другой", "Механизм, при котором объекты могут наследовать свойства и методы от других объектов", "Создание классов", "Ограничение доступа к свойствам"], answer: 1, explanation: "Каждый объект в JS имеет внутреннюю ссылку на другой объект, называемый его прототипом. При доступе к свойству, если его нет в самом объекте, поиск продолжается в прототипе." },
+        { difficulty: 3, question: "Что такое CORS (Cross-Origin Resource Sharing)?", options: ["Способ шифрования данных", "Механизм безопасности браузера, который управляет доступом к ресурсам с других доменов", "Формат изображений", "JavaScript API"], answer: 1, explanation: "CORS позволяет серверу указать, какие домены (origins) имеют право на доступ к его ресурсам, защищая от несанкционированных запросов." },
+        { difficulty: 3, question: "Что делает оператор 'spread' (`...`)?", options: ["Объединяет несколько массивов в один", "Разворачивает итерируемые элементы (массивы, строки) в местах, где ожидается ноль или более аргументов", "Создает копию объекта", "Все перечисленное"], answer: 3, explanation: "Оператор spread универсален: `[...arr1, ...arr2]` для слияния, `myFunction(...args)` для передачи аргументов, `{...obj}` для поверхностного копирования." },
+        { difficulty: 3, question: "В чем разница между `map` и `forEach`?", options: ["`map` быстрее", "`forEach` возвращает новый массив, `map` - нет", "`map` возвращает новый массив, `forEach` - `undefined`", "`forEach` можно остановить"], answer: 2, explanation: "Основное отличие в том, что `.map()` предназначен для трансформации данных и возвращает новый массив, в то время как `.forEach()` просто выполняет операцию для каждого элемента и ничего не возвращает." },
+        { difficulty: 3, question: "Что такое Webpack?", options: ["Текстовый редактор", "JavaScript фреймворк", "Сборщик модулей для современных JavaScript-приложений", "Система управления базами данных"], answer: 2, explanation: "Webpack обрабатывает ваши файлы (JS, CSS, изображения), применяет к ним загрузчики и плагины, и собирает их в оптимизированные бандлы для браузера." },
+        { difficulty: 3, question: "Что такое Virtual DOM?", options: ["Альтернатива HTML", "Представление реального DOM в виде объекта JavaScript, используемое для оптимизации обновлений", "API для работы с 3D-графикой", "Спецификация W3C"], answer: 1, explanation: "Фреймворки, такие как React, используют Virtual DOM для вычисления минимальных изменений, которые нужно внести в реальный DOM, что делает обновления интерфейса очень быстрыми." },
+        { difficulty: 3, question: "Что такое 'pure function' (чистая функция)?", options: ["Функция без аргументов", "Функция, которая всегда возвращает одно и то же значение для одинаковых аргументов и не имеет побочных эффектов", "Функция, написанная на TypeScript", "Функция, возвращающая `true` или `false`"], answer: 1, explanation: "Чистые функции предсказуемы и их легко тестировать, так как их результат зависит только от входных данных, и они не изменяют внешнее состояние." },
+        { difficulty: 3, question: "Для чего нужен `useMemo` в React?", options: ["Для выполнения сайд-эффектов", "Для запоминания (мемоизации) результата вычисления функции", "Для хранения состояния", "Для доступа к контексту"], answer: 1, explanation: "`useMemo` кэширует результат дорогостоящих вычислений, чтобы они не выполнялись при каждом рендере, а только при изменении зависимостей." },
+        { difficulty: 3, question: "Что такое 'debouncing'?", options: ["Техника оптимизации, откладывающая выполнение функции, пока не пройдет определенное время без ее вызова", "Сжатие изображений", "Разделение кода на чанки", "Запрос данных с сервера"], answer: 0, explanation: "Debouncing полезен для обработки событий, которые могут срабатывать очень часто, например, ввод текста в поиске или изменение размера окна." },
+        { difficulty: 3, question: "Как работает `display: grid;`?", options: ["Делает элемент строчным", "Создает блочный элемент", "Превращает элемент в контейнер для двумерной сеточной верстки", "Позволяет элементам обтекать друг друга"], answer: 2, explanation: "CSS Grid Layout — это мощная система для создания сложных макетов, основанных на строках и колонках." },
+        { difficulty: 3, question: "Что такое 'event delegation' (делегирование событий)?", options: ["Назначение нескольких обработчиков на одно событие", "Передача события другому элементу", "Техника, при которой обработчик события вешается на родительский элемент вместо каждого дочернего", "Отмена события"], answer: 2, explanation: "Делегирование использует всплытие событий и позволяет эффективно управлять событиями для большого количества динамически добавляемых элементов." },
+        { difficulty: 3, question: "Что такое TypeScript?", options: ["Новая версия JavaScript", "JavaScript с добавлением статической типизации", "Фреймворк для JS", "Библиотека для стилей"], answer: 1, explanation: "TypeScript является надмножеством JavaScript, добавляя типы и другие возможности, которые помогают создавать более надежные и масштабируемые приложения." },
+        { difficulty: 3, question: "В чем разница между `Promise.all` и `Promise.race`?", options: ["`all` ждет все промисы, `race` - любой", "`race` быстрее", "`all` возвращает массив, `race` - одно значение", "Все перечисленное"], answer: 3, explanation: "`Promise.all` выполняется, когда все промисы в массиве выполнены успешно. `Promise.race` выполняется, как только любой из промисов в массиве выполняется или отклоняется." },
+        { difficulty: 3, question: "Что такое 'tree shaking'?", options: ["Анимация дерева DOM", "Процесс удаления 'мертвого' (неиспользуемого) кода из финальной сборки", "Сортировка элементов DOM", "Способ отладки"], answer: 1, explanation: "Tree shaking — это важная оптимизация, используемая сборщиками, такими как Webpack или Rollup, для уменьшения размера бандла." },
+        { difficulty: 3, question: "Что такое Service Worker?", options: ["Веб-сервер на JS", "Скрипт, который браузер запускает в фоновом режиме для реализации PWA-функциональности (офлайн-режим, push-уведомления)", "API для многопоточности", "Библиотека для анимации"], answer: 1, explanation: "Service Workers действуют как прокси-сервер между веб-приложением, браузером и сетью." },
+        { difficulty: 3, question: "Как работает ключевое слово `this`?", options: ["Всегда указывает на глобальный объект", "Всегда указывает на объект, в котором была определена функция", "Его значение определяется тем, как вызывается функция", "Это ссылка на прототип"], answer: 2, explanation: "Значение `this` (контекст вызова) динамическое. В методе объекта `obj.method()` `this` будет `obj`. В обычной функции в строгом режиме - `undefined`. В стрелочных функциях `this` лексический." },
+        { difficulty: 3, question: "Что такое 'Higher-Order Component' (HOC) в React?", options: ["Компонент с z-index > 1000", "Функция, которая принимает компонент и возвращает новый компонент с дополнительной логикой", "Самый родительский компонент в приложении", "Компонент, использующий `useState`"], answer: 1, explanation: "HOC — это продвинутый паттерн в React для переиспользования логики компонентов. Примеры: `connect` в Redux, `withRouter` в React Router." },
+        { difficulty: 3, question: "Какая разница между `rem` и `em`?", options: ["Нет разницы", "`em` относительно родителя, `rem` - относительно корневого элемента (`html`)", "`rem` для шрифтов, `em` для отступов", "`rem` работает только в Chrome"], answer: 1, explanation: "Использование `rem` предпочтительнее для создания масштабируемых интерфейсов, так как все размеры зависят от одного базового значения `font-size` на `<html>`." },
+        { difficulty: 3, question: "Что такое SSR (Server-Side Rendering)?", options: ["Рендеринг страницы в Service Worker", "Процесс рендеринга клиентского приложения на сервере в HTML для быстрой первой загрузки и SEO", "Рендеринг только видимой части страницы", "API для рисования на сервере"], answer: 1, explanation: "SSR помогает улучшить производительность и индексацию поисковыми системами для SPA (Single Page Applications)." },
+        { difficulty: 3, question: "Что такое 'destructuring' (деструктуризация)?", options: ["Удаление свойств из объекта", "Синтаксис, позволяющий извлекать значения из массивов или свойства из объектов в отдельные переменные", "Разрушение приложения", "Способ шифрования данных"], answer: 1, explanation: "Деструктуризация (`const { name, age } = user;`) делает код более чистым и кратким." },
+        { difficulty: 3, question: "Что такое 'critical rendering path'?", options: ["Самый длинный путь выполнения JS", "Последовательность шагов, которые браузер выполняет для преобразования HTML, CSS и JS в пиксели на экране", "Путь к главному CSS файлу", "Ошибка рендеринга"], answer: 1, explanation: "Оптимизация критического пути рендеринга (минимизация CSS/JS, асинхронная загрузка) — ключ к быстрой загрузке страницы." },
+        { difficulty: 3, question: "Что такое 'currying' (каррирование)?", options: ["Техника преобразования функции с множеством аргументов в последовательность функций с одним аргументом", "Смешивание языков программирования", "Способ отладки асинхронного кода", "Паттерн в React"], answer: 0, explanation: "Каррирование позволяет создавать более специализированные функции и упрощает композицию." },
+        // Difficulty 4: Эксперт (25 вопросов)
+        { difficulty: 4, question: "Что такое 'event loop' (цикл событий) в JavaScript?", options: ["Цикл `for` для событий", "Механизм, который позволяет выполнять неблокирующие асинхронные операции в однопоточном JS", "API для создания кастомных событий", "Бесконечный цикл"], answer: 1, explanation: "Event Loop постоянно проверяет стек вызовов и очередь сообщений (callback queue). Если стек пуст, он берет первое сообщение из очереди и помещает его в стек для выполнения." },
+        { difficulty: 4, question: "Объясните разницу между LCP, FID и CLS (Core Web Vitals).", options: ["Метрики SEO", "Метрики производительности, оценивающие загрузку, интерактивность и визуальную стабильность", "JavaScript фреймворки", "Типы HTTP-запросов"], answer: 1, explanation: "LCP (Largest Contentful Paint) - скорость загрузки. FID (First Input Delay) - отзывчивость. CLS (Cumulative Layout Shift) - стабильность верстки." },
+        { difficulty: 4, question: "Что такое 'Micro Frontends'?", options: ["Очень маленькие фреймворки", "Архитектурный подход, при котором веб-приложение рассматривается как композиция независимых фронтенд-приложений", "Фреймворк для мобильных устройств", "Способ сжатия фронтенда"], answer: 1, explanation: "Микрофронтенды позволяют разным командам независимо разрабатывать и развертывать части одного большого приложения." },
+        { difficulty: 4, question: "Как работает 'garbage collector' (сборщик мусора) в JS?", options: ["Удаляет неиспользуемые файлы", "Автоматически освобождает память, находя 'недостижимые' объекты", "Очищает `localStorage`", "Оптимизирует CSS"], answer: 1, explanation: "В JS используется алгоритм 'mark-and-sweep' (пометь и убери), который периодически находит объекты, на которые больше нет ссылок, и освобождает занимаемую ими память." },
+        { difficulty: 4, question: "Что такое WebAssembly (Wasm)?", options: ["Новый язык программирования", "Бинарный формат инструкций для стековой виртуальной машины, позволяющий выполнять код на других языках в браузере с почти нативной скоростью", "Замена JavaScript", "API для 3D"], answer: 1, explanation: "Wasm не заменяет JS, а дополняет его, позволяя переносить на веб ресурсоемкие задачи (игры, обработка видео, криптография)." },
+        { difficulty: 4, question: "Что такое XSS (Cross-Site Scripting)?", options: ["CSS фреймворк", "Тип атаки, при которой вредоносные скрипты внедряются в доверенные веб-сайты", "Способ обмена данными между сайтами", "Политика безопасности"], answer: 1, explanation: "Защита от XSS включает экранирование пользовательского ввода, использование Content Security Policy (CSP) и современных фреймворков, которые делают это по умолчанию." },
+        { difficulty: 4, question: "Что такое 'memoization' (мемоизация)?", options: ["Запись данных в `localStorage`", "Техника оптимизации, заключающаяся в кэшировании результатов выполнения функций для предотвращения повторных вычислений с теми же аргументами", "Создание 'мемо' в коде", "Асинхронное программирование"], answer: 1, explanation: "Мемоизация особенно эффективна для 'дорогих' рекурсивных функций, таких как вычисление чисел Фибоначчи." },
+        { difficulty: 4, question: "В чем заключается 'single-threaded' (однопоточная) природа JavaScript?", options: ["JS может выполнять только одну задачу в один момент времени", "JS работает только в одном файле", "JS не поддерживает функции", "JS не может работать с сетью"], answer: 0, explanation: "Несмотря на однопоточность, JS обрабатывает асинхронность (например, сетевые запросы) с помощью event loop, не блокируя основной поток выполнения." },
+        { difficulty: 4, question: "Что такое 'code splitting'?", options: ["Разделение кода на несколько файлов вручную", "Техника, используемая сборщиками (Webpack), для разделения кода на несколько 'чанков', которые могут загружаться по требованию", "Комментирование кода", "Рефакторинг кода"], answer: 1, explanation: "Code splitting улучшает время начальной загрузки приложения, так как пользователю не нужно сразу загружать весь код приложения, а только тот, который нужен для текущей страницы." },
+        { difficulty: 4, question: "Что такое 'render props' в React?", options: ["Свойство `render` у классового компонента", "Паттерн, при котором компонент принимает функцию в качестве prop, которая возвращает React-элемент", "Рендеринг props на странице", "Способ стилизации"], answer: 1, explanation: "Render props — это гибкий способ переиспользования логики, альтернативный HOC и хукам." },
+        { difficulty: 4, question: "Что такое IndexedDB?", options: ["SQL база данных в браузере", "Низкоуровневое API для хранения больших объемов структурированных данных на стороне клиента", "Замена `localStorage`", "API для индексации сайта"], answer: 1, explanation: "IndexedDB — это транзакционная NoSQL база данных, подходящая для создания офлайн-приложений и работы с большими наборами данных." },
+        { difficulty: 4, question: "Опишите этапы Browser Rendering Pipeline.", options: ["Parse -> Style -> Layout -> Paint -> Composite", "Download -> Execute -> Render", "Fetch -> Decode -> Paint", "HTML -> CSS -> JS"], answer: 0, explanation: "Понимание этого процесса (парсинг HTML, расчет стилей, вычисление геометрии, отрисовка слоев и их склейка) критически важно для оптимизации производительности рендеринга." },
+        { difficulty: 4, question: "Что такое 'Isomorphic' / 'Universal' JavaScript?", options: ["Код, который работает только в одном браузере", "Код на JavaScript, который может выполняться как на клиенте (в браузере), так и на сервере (например, в Node.js)", "Очень сложный код", "Код без багов"], answer: 1, explanation: "Универсальный JS позволяет использовать одну и ту же кодовую базу для SSR и клиентского рендеринга, что упрощает разработку." },
+        { difficulty: 4, question: "Что такое 'shadow DOM'?", options: ["Скрытая копия DOM", "Технология, позволяющая инкапсулировать DOM и стили внутри веб-компонента", "Темная тема для DOM", "Виртуальный DOM"], answer: 1, explanation: "Shadow DOM является ключевой частью спецификации Web Components и предотвращает конфликты стилей и скриптов между компонентом и остальной частью страницы." },
+        { difficulty: 4, question: "Как предотвратить 'layout thrashing'?", options: ["Использовать `requestAnimationFrame`", "Группировать операции чтения и записи DOM", "Не использовать JS для анимации", "Всегда использовать `!important`"], answer: 1, explanation: "Layout thrashing — это проблема производительности, когда браузер вынужден многократно пересчитывать геометрию (layout) из-за чередующихся операций чтения (например, `offsetHeight`) и записи (например, `style.height`) в DOM." },
+        { difficulty: 4, question: "Что такое WebSockets?", options: ["Тип HTTP-запроса", "Протокол, обеспечивающий постоянное двунаправленное соединение между клиентом и сервером", "JavaScript библиотека", "Хранилище в браузере"], answer: 1, explanation: "WebSockets идеально подходят для приложений, требующих обмена данными в реальном времени, таких как чаты, игры или биржевые котировки." },
+        { difficulty: 4, question: "Что такое `Proxy` объект в JS?", options: ["Прокси-сервер для запросов", "Объект, который позволяет создавать 'ловушки' (traps) для фундаментальных операций над другим объектом", "Способ защитить объект от изменений", "Альтернатива `Object.freeze`"], answer: 1, explanation: "Прокси позволяют перехватывать и настраивать поведение операций, таких как чтение, запись свойств, вызов функций. Они используются в таких библиотеках как Vue 3 для реактивности." },
+        { difficulty: 4, question: "Что такое 'Composition' over 'Inheritance'?", options: ["Принцип в CSS", "Принцип проектирования, согласно которому предпочтение отдается построению сложных объектов из более простых, а не наследованию от них", "Способ оптимизации изображений", "Паттерн в Node.js"], answer: 1, explanation: "Композиция предлагает большую гибкость, чем классическое наследование, и является одним из ключевых принципов в React ('props.children')." },
+        { difficulty: 4, question: "Для чего используется Content Security Policy (CSP)?", options: ["Для стилизации контента", "Для контроля версий контента", "Защитный механизм для обнаружения и смягчения атак, таких как XSS и инъекции данных", "Для управления кэшем"], answer: 2, explanation: "CSP — это HTTP-заголовок, который позволяет веб-мастерам контролировать, какие ресурсы (скрипты, стили, изображения) браузеру разрешено загружать для данной страницы." },
+        { difficulty: 4, question: "Что такое 'generator function' в JS (`function*`)?", options: ["Функция, генерирующая случайные числа", "Функция, выполнение которой можно приостанавливать и возобновлять", "Функция, которая генерирует HTML", "Асинхронная функция"], answer: 1, explanation: "Генераторы используют оператор `yield` для возврата значения и приостановки. Они являются основой для реализации `async/await` и полезны для работы с бесконечными последовательностями." },
+        { difficulty: 4, question: "Что такое HTTP/2 и его основные преимущества перед HTTP/1.1?", options: ["Новый протокол, использующий UDP", "Более быстрая версия HTTP", "Протокол с мультиплексированием, сжатием заголовков и server push", "Протокол только для WebSockets"], answer: 2, explanation: "Мультиплексирование в HTTP/2 позволяет браузеру загружать множество ресурсов параллельно через одно TCP-соединение, устраняя проблему 'head-of-line blocking'." },
+        { difficulty: 4, question: "Что такое Big O notation и зачем она фронтенд-разработчику?", options: ["Способ стилизации", "Классификация алгоритмов по времени выполнения или требуемой памяти в зависимости от размера входных данных", "Библиотека для математики", "Не нужна фронтендерам"], answer: 1, explanation: "Понимание Big O (например, O(n), O(log n), O(n²)) помогает писать эффективный код, особенно при работе с большими массивами данных, их фильтрацией и сортировкой." },
+        { difficulty: 4, question: "Что такое 'hydration' в контексте SSR?", options: ["Процесс 'оживления' статичного HTML, полученного от сервера, путем подключения обработчиков событий и инициализации состояния на клиенте", "Сжатие HTML", "Загрузка CSS", "Кэширование на сервере"], answer: 0, explanation: "Гидратация превращает серверный рендер в полностью интерактивное SPA в браузере." },
+        { difficulty: 4, question: "Что такое Web Vitals и зачем они нужны?", options: ["API для работы с видео", "Инициатива Google для предоставления унифицированных рекомендаций по качеству, необходимых для удобства работы в Интернете", "Набор метрик для оценки производительности", "Все вышеперечисленное"], answer: 3, explanation: "Web Vitals, включая Core Web Vitals (LCP, FID, CLS), напрямую влияют на пользовательский опыт и ранжирование в поиске Google." },
+        { difficulty: 4, question: "Что такое 'atomic CSS'?", options: ["CSS для создания атомов", "Подход, при котором классы имеют одну, неизменяемую стилистическую функцию (например, `.text-center`, `.p-4`)", "Устаревшая методология", "CSS, написанный на ассемблере"], answer: 1, explanation: "Фреймворки, такие как Tailwind CSS, являются яркими представителями atomic (или utility-first) CSS, что позволяет быстро создавать интерфейсы без написания кастомного CSS." },
+    ];
+    
+    // --- STATE & UI ELEMENTS ---
+    const state = { questions: [], currentQuestionIndex: 0, score: 0, userAnswers: [] };
+    const tg = window.Telegram.WebApp;
+    const screens = { start: document.getElementById('start-screen'), question: document.getElementById('question-screen'), result: document.getElementById('result-screen') };
+    const ui = {
+        startBtn: document.getElementById('start-btn'), 
+        restartBtn: document.getElementById('restart-btn'), 
+        questionTitle: document.getElementById('question-title'), 
+        optionsContainer: document.getElementById('options-container'),
+        scoreText: document.getElementById('score-text'), 
+        feedbackText: document.getElementById('feedback-text'), 
+        sendingStatus: document.getElementById('sending-status'), 
+        progressText: document.getElementById('progress-text'),
+        progressBar: document.getElementById('progress-bar'), 
+        resultReview: document.getElementById('result-review'), 
+        difficultyBadge: document.getElementById('difficulty-badge')
+    };
+
+    // --- INITIALIZATION ---
+    tg.ready();
+    tg.expand();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+
+    // --- FUNCTIONS ---
+    const switchScreen = (screenName) => Object.values(screens).forEach(s => s.classList.toggle('active', s.id === `${screenName}-screen`));
+    const shuffleArray = (array) => array.slice().sort(() => Math.random() - 0.5);
+
+    const startQuiz = () => {
+        state.questions = [];
+        for (const level in config.difficultyLevels) {
+            const levelNum = parseInt(level, 10);
+            const levelQuestions = shuffleArray(allQuestions.filter(q => q.difficulty === levelNum));
+            state.questions.push(...levelQuestions.slice(0, config.questionsPerDifficulty));
+        }
+        
+        // **ИСПРАВЛЕНИЕ**: Проверка, что вопросы успешно созданы
+        if (state.questions.length === 0) {
+            console.error("Не удалось сформировать список вопросов.");
+            tg.showAlert("Не удалось загрузить вопросы. Пожалуйста, попробуйте перезапустить приложение.");
+            return;
+        }
+
+        state.currentQuestionIndex = 0; 
+        state.score = 0; 
+        state.userAnswers = [];
+        tg.MainButton.hide();
+        switchScreen('question');
+        showQuestion();
+    };
+
+    const showQuestion = () => {
+        ui.optionsContainer.innerHTML = '';
+        const q = state.questions[state.currentQuestionIndex];
+        
+        // **ИСПРАВЛЕНИЕ**: Защита от ошибки, если вопрос по какой-то причине не найден
+        if (!q || !q.options) {
+            console.error(`Ошибка: вопрос с индексом ${state.currentQuestionIndex} не найден или некорректен.`);
+            tg.showAlert("Произошла ошибка при загрузке вопроса. Тест будет завершен.");
+            showResults();
+            return;
+        }
+
+        const progress = (state.currentQuestionIndex / state.questions.length) * 100;
+        ui.progressBar.style.width = `${progress}%`;
+        ui.progressText.textContent = `Вопрос ${state.currentQuestionIndex + 1} из ${state.questions.length}`;
+        
+        const difficulty = config.difficultyLevels[q.difficulty];
+        if (difficulty) {
+            ui.difficultyBadge.textContent = difficulty.name;
+            ui.difficultyBadge.className = `text-xs font-bold px-2 py-1 rounded-full ${difficulty.color} ${difficulty.textColor}`;
+        }
+
+        ui.questionTitle.textContent = q.question;
+
+        q.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.innerHTML = `<span>${option}</span> <span class="icon-placeholder"></span>`;
+            button.classList.add('option-btn');
+            button.onclick = () => selectAnswer(index);
+            ui.optionsContainer.appendChild(button);
+        });
+    };
+
+    const selectAnswer = (selectedIndex) => {
+        tg.HapticFeedback.impactOccurred('light');
+        const q = state.questions[state.currentQuestionIndex];
+        const isCorrect = selectedIndex === q.answer;
+        if (isCorrect) state.score++;
+        state.userAnswers.push({ ...q, selectedIndex, isCorrect });
+
+        const buttons = Array.from(ui.optionsContainer.getElementsByTagName('button'));
+        buttons.forEach((btn, index) => {
+            btn.disabled = true;
+            const iconPlaceholder = btn.querySelector('.icon-placeholder');
+            if (index === selectedIndex) {
+                btn.classList.add(isCorrect ? 'correct' : 'wrong');
+                iconPlaceholder.innerHTML = isCorrect ? '<i data-lucide="check-circle" class="w-5 h-5"></i>' : '<i data-lucide="x-circle" class="w-5 h-5"></i>';
+            } else if (index === q.answer) {
+                btn.classList.add('correct');
+                iconPlaceholder.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i>';
+            } else {
+                btn.classList.add('faded');
+            }
+        });
+
+        // **ИСПРАВЛЕНИЕ**: Проверка наличия `lucide` перед вызовом
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+        
+        setTimeout(() => {
+            state.currentQuestionIndex++;
+            if (state.currentQuestionIndex < state.questions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }, 1800);
+    };
+
+    const showResults = () => {
+        tg.HapticFeedback.notificationOccurred('success');
+        switchScreen('result');
+        const percentage = state.questions.length > 0 ? Math.round((state.score / state.questions.length) * 100) : 0;
+        ui.scoreText.textContent = `${percentage}%`;
+
+        let fb = '';
+        if (percentage === 100) fb = 'Безупречно! Вы — настоящий эксперт!';
+        else if (percentage >= 80) fb = 'Отличный результат! Вы глубоко разбираетесь в теме.';
+        else if (percentage >= 60) fb = 'Хорошая работа! Есть пара моментов для улучшения.';
+        else if (percentage >= 40) fb = 'Неплохое начало, но стоит углубить знания.';
+        else fb = 'Это был сложный тест. Повторение — мать учения!';
+        ui.feedbackText.textContent = fb;
+        
+        ui.resultReview.innerHTML = `<h3 class="text-xl font-semibold mb-4">Разбор ответов:</h3>`;
+        state.userAnswers.forEach(answer => {
+            const item = document.createElement('div');
+            item.className = `result-review-item ${answer.isCorrect ? 'correct' : 'wrong'}`;
+            item.innerHTML = `
+                <p class="font-semibold text-base">${answer.question}</p>
+                ${!answer.isCorrect ? `<p class="text-sm mt-2">Ваш ответ: <span class="font-medium">${answer.options[answer.selectedIndex]}</span></p>` : ''}
+                <p class="text-sm mt-1">Правильный ответ: <span class="font-medium">${answer.options[answer.answer]}</span></p>
+                <p class="explanation">${answer.explanation}</p>
+            `;
+            ui.resultReview.appendChild(item);
+        });
+
+        tg.MainButton.setText('Закрыть').show().onClick(() => tg.close());
+        sendResultToBot();
+    };
+
+    const sendResultToBot = async () => {
+        ui.sendingStatus.innerHTML = '<div class="loader"></div> <span class="ml-2">Отправляем результат...</span>';
+        const user = tg.initDataUnsafe?.user;
+        const userName = user ? `${user.first_name || ''} ${user.last_name || ''} (@${user.username || '...'})`.trim() : 'Анонимный пользователь';
+        const text = `
+✅ *Тест по Front-end завершен!*
+
+👨‍💻 *Пользователь:* \`${userName}\`
+🆔 *User ID:* \`${user ? user.id : 'N/A'}\`
+📊 *Результат:* ${state.score} из ${state.questions.length} (${state.questions.length > 0 ? Math.round((state.score / state.questions.length) * 100) : 0}%)
+        `;
+        
+        try {
+            const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: config.chatId, text, parse_mode: 'Markdown' })
+            });
+            const data = await response.json();
+            if (!data.ok) throw new Error(data.description);
+            ui.sendingStatus.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i><span class="ml-2">Результат успешно отправлен!</span>';
+        } catch (error) {
+            console.error('Ошибка отправки:', error);
+            ui.sendingStatus.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i><span class="ml-2">Ошибка при отправке.</span>';
+        } finally {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+    };
+    
+    // --- EVENT LISTENERS ---
+    ui.startBtn.addEventListener('click', startQuiz);
+    ui.restartBtn.addEventListener('click', startQuiz);
+});
+</script>
+</body>
+</html>
