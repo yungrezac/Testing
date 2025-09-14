@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=0.9, user-scalable=no">
+    <!-- ИЗМЕНЕНИЕ: Установлен initial-scale=1.0 для корректного масштабирования на всех устройствах. -->
+    <!-- Это стандартная практика для адаптивных сайтов, которая предотвращает горизонтальную прокрутку. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>квиз wiwiwiw</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -132,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { difficulty: 1, question: "Что такое HTML?", options: ["Язык программирования", "Язык разметки", "СУБД", "Графический редактор"], answer: 1, explanation: "HTML (HyperText Markup Language) — это стандартный язык разметки для создания веб-страниц." },
         { difficulty: 1, question: "Какой тег используется для создания неупорядоченного списка?", options: ["<ol>", "<ul>", "<li>", "<list>"], answer: 1, explanation: "Тег <ul> (unordered list) создает маркированный список." },
         { difficulty: 1, question: "Как подключить внешний файл стилей CSS к HTML?", options: ["<style src='...'>", "<script href='...'>", "<link rel='stylesheet' href='...'>", "<css>"], answer: 2, explanation: "Тег <link> в <head> используется для подключения внешних таблиц стилей." },
-        { difficulty: 1, question: "Какой символ используется для комментирования одной строки в JS?", options: ["//", "/* */", "", "#"], answer: 0, explanation: "// используется для однострочных комментариев в JavaScript." },
+        { difficulty: 1, question: "Какой символ используется для комментирования одной строки в JS?", options: ["//", "/* */", "<!-- -->", "#"], answer: 0, explanation: "// используется для однострочных комментариев в JavaScript." },
         { difficulty: 1, question: "Что делает свойство `display: none;`?", options: ["Делает элемент прозрачным", "Скрывает элемент, оставляя место", "Полностью удаляет элемент из потока", "Уменьшает элемент"], answer: 2, explanation: "`display: none;` полностью убирает элемент со страницы, и он не занимает места." },
         { difficulty: 1, question: "Как получить элемент из DOM по его id?", options: ["document.query('#id')", "document.getElementById('id')", "getElement('id')", "$('#id')"], answer: 1, explanation: "Метод `document.getElementById()` является стандартным способом получения элемента по его id." },
         { difficulty: 1, question: "Какой тег используется для вставки изображения?", options: ["<image>", "<img>", "<pic>", "<src>"], answer: 1, explanation: "Тег <img> с атрибутом src используется для встраивания изображений." },
@@ -142,10 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
         { difficulty: 1, question: "Что делает оператор `+` со строками в JS?", options: ["Вызывает ошибку", "Вычитает их", "Конкатенирует (объединяет) их", "Ничего"], answer: 2, explanation: "При использовании со строками, оператор `+` выполняет конкатенацию." },
         { difficulty: 1, question: "Какой атрибут HTML указывает на адрес для ссылки?", options: ["src", "link", "href", "url"], answer: 2, explanation: "Атрибут `href` (hypertext reference) задает URL-адрес для тега `<a>`." },
         { difficulty: 1, question: "Как задать внутренние отступы для элемента?", options: ["margin", "padding", "border", "spacing"], answer: 1, explanation: "Свойство `padding` устанавливает внутренние отступы от контента до границ элемента." },
-        { difficulty: 1, question: "Как объявить функцию в JavaScript?", options: ["function myFunction()", "def myFunction()", "func myFunction()", "myFunction = () =>"], answer: 0, explanation: "Ключевое слово `function` используется для объявления функции (Function Declaration)." },
+        { difficulty: 1, question: "Как объявить функцию в JavaScript?", options: ["function myFunction() {}", "def myFunction()", "func myFunction()", "myFunction = () => {}"], answer: 0, explanation: "Ключевое слово `function` используется для объявления функции (Function Declaration)." },
         { difficulty: 1, question: "Какой тег является корневым элементом HTML-документа?", options: ["<body>", "<head>", "<html>", "<!DOCTYPE html>"], answer: 2, explanation: "Тег <html> является контейнером для всего содержимого страницы." },
         { difficulty: 1, question: "Как выбрать все элементы `<p>` в CSS?", options: ["#p", ".p", "p", "*p"], answer: 2, explanation: "Селектор по тегу `p` выберет все параграфы на странице." },
-        { difficulty: 1, question: "Что вернет выражение `2 + '2'` в JS?", options: ["4", "22", "Error", "NaN"], answer: 1, explanation: "JS приведет число 2 к строке и выполнит конкатенацию, результат будет '22'." },
+        { difficulty: 1, question: "Что вернет выражение `2 + '2'` в JS?", options: ["4", "'22'", "Error", "NaN"], answer: 1, explanation: "JS приведет число 2 к строке и выполнит конкатенацию, результат будет '22'." },
         { difficulty: 1, question: "Какой тег используется для самого важного заголовка?", options: ["<h6>", "<h1>", "<head>", "<header>"], answer: 1, explanation: "<h1> представляет самый высокий уровень заголовка на странице." },
         { difficulty: 1, question: "Как задать внешние отступы для элемента?", options: ["margin", "padding", "border", "spacing"], answer: 0, explanation: "Свойство `margin` устанавливает внешние отступы вокруг элемента." },
         // Difficulty 2: Средний (25 вопросов)
@@ -173,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { difficulty: 2, question: "В чем разница между `let` и `var`?", options: ["Нет разницы", "`let` имеет блочную область видимости, `var` - функциональную", "`var` можно переопределять, `let` - нет", "`let` для чисел, `var` для строк"], answer: 1, explanation: "Переменные, объявленные с `let`, существуют только в пределах блока (`{...}`), в котором они определены." },
         { difficulty: 2, question: "Что такое Document Object Model (DOM)?", options: ["Модель данных CSS", "Объектное представление HTML-документа", "Спецификация JavaScript", "Сетевой протокол"], answer: 1, explanation: "DOM представляет документ как дерево объектов, позволяя языкам программирования, таким как JavaScript, взаимодействовать со страницей." },
         { difficulty: 2, question: "Как в CSS Grid создать 3 колонки равной ширины?", options: ["grid-template-columns: 33.3% 33.3% 33.3%;", "grid-template-columns: 1fr 1fr 1fr;", "grid-template-columns: repeat(3, auto);", "grid-columns: 3;"], answer: 1, explanation: "Единица `fr` представляет долю доступного пространства в грид-контейнере, что делает ее идеальной для создания гибких колонок." },
-        { difficulty: 2, question: "Что такое стрелочная функция (arrow function)?", options: ["Функция, которая рисует стрелки", "Более короткий синтаксис для написания функций", "Функция, которая не имеет `this`", "Функция для анимации"], answer: 1, explanation: "Стрелочные функции (`=>`) имеют более короткий синтаксис и лексически привязывают значение `this`." },
+        { difficulty: 2, question: "Что такое стрелочная функция (arrow function)?", options: ["Функция, которая рисует стрелки", "Более короткий синтаксис для написания функций, который не имеет своего `this`", "Функция, которая не имеет `this`", "Функция для анимации"], answer: 1, explanation: "Стрелочные функции (`=>`) имеют более короткий синтаксис и лексически привязывают значение `this`." },
         // Difficulty 3: Продвинутый (25 вопросов)
         { difficulty: 3, question: "Что такое 'hoisting' (поднятие) в JavaScript?", options: ["Оптимизация кода компилятором", "Процесс, при котором объявления переменных и функций перемещаются вверх их области видимости", "Асинхронный вызов функции", "Создание замыкания"], answer: 1, explanation: "Из-за поднятия вы можете использовать функцию до ее объявления. `var` поднимаются со значением `undefined`, а `let` и `const` - нет (Temporal Dead Zone)." },
         { difficulty: 3, question: "Для чего используется `async/await`?", options: ["Для создания промисов", "Для синхронного выполнения кода", "Для работы с асинхронным кодом в более синхронном стиле", "Для отмены промисов"], answer: 2, explanation: "`async/await` — это синтаксический сахар над промисами, который позволяет писать асинхронный код, выглядящий как синхронный, что улучшает читаемость." },
@@ -265,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.questions.push(...levelQuestions.slice(0, config.questionsPerDifficulty));
         }
         
-        // **ИСПРАВЛЕНИЕ**: Проверка, что вопросы успешно созданы
+        // **ИСПРАВЛЕНИЕ**: Проверка, что вопросы успешно созданы, чтобы избежать ошибок.
         if (state.questions.length === 0) {
             console.error("Не удалось сформировать список вопросов.");
             tg.showAlert("Не удалось загрузить вопросы. Пожалуйста, попробуйте перезапустить приложение.");
@@ -284,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.optionsContainer.innerHTML = '';
         const q = state.questions[state.currentQuestionIndex];
         
-        // **ИСПРАВЛЕНИЕ**: Защита от ошибки, если вопрос по какой-то причине не найден
+        // **ИСПРАВЛЕНИЕ**: Защита от ошибки, если вопрос по какой-то причине не найден или некорректен.
         if (!q || !q.options) {
             console.error(`Ошибка: вопрос с индексом ${state.currentQuestionIndex} не найден или некорректен.`);
             tg.showAlert("Произошла ошибка при загрузке вопроса. Тест будет завершен.");
@@ -335,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // **ИСПРАВЛЕНИЕ**: Проверка наличия `lucide` перед вызовом
+        // **ИСПРАВЛЕНИЕ**: Проверка наличия `lucide` перед вызовом, чтобы избежать ошибки, если библиотека не загрузилась.
         if (window.lucide) {
             lucide.createIcons();
         }
